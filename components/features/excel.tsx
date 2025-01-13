@@ -9,7 +9,8 @@ import AddCaseModal from "@/components/AddCaseModal";
 import styles from './excel.module.css';
 import Progress from "@/components/features/loader"
 import Filter from "./filter";
-import { useSession } from "next-auth/react";
+import { useSession, signIn } from "next-auth/react";
+import { Session } from "next-auth";
 import { useToast } from "@/hooks/use-toast";
 import { FaSpinner } from "react-icons/fa"; // Import a spinner icon
 import { parse, isValid, differenceInDays } from 'date-fns'; // Add the imports
@@ -34,8 +35,8 @@ const ExcelComponent = () => {
 
 
   const { toast } = useToast();
-
-  const { data: session } = useSession({ required: true })
+  const { data: sessionData } = useSession({ required: true });
+  const session = sessionData as Session & { user: { role?: string } } | null;
 
   const [cases, setCases] = useState<Case[]>([]);
   const [headers, setHeaders] = useState<string[]>([]);
@@ -56,7 +57,7 @@ const ExcelComponent = () => {
 
 
   const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState()
+  const [error, setError] = useState<unknown>()
 
   useEffect(() => {
     const fetchData = async () => {
@@ -184,6 +185,7 @@ const ExcelComponent = () => {
       .map((row) => row.petitioner); // Return the PETITIONER
   };
 
+  
   const handleEdit = (rowIndex: number) => {
     setEditingRow(rowIndex);
     setEditedData(filteredCases[rowIndex]);
@@ -227,7 +229,7 @@ const ExcelComponent = () => {
         console.error('Error updating case:', data.message);
       }
     } catch (error) {
-      setError(error)
+      setError(error as unknown)
       console.error('Error:', error);
     } finally {
       if (!error) {
@@ -461,7 +463,6 @@ const ExcelComponent = () => {
     const [day, month, year] = dateString.split("/").map(Number);
     return new Date(2000 + year, month - 1, day); // Adjust for 2-digit year (2000+)
   };
-
   const getRowClass = (hearingDate: string) => {
     if (!hearingDate) return { className: "", symbol: "" }; // Handle missing or invalid dates
   
@@ -514,7 +515,7 @@ const ExcelComponent = () => {
       </div>
       <div className="w-full grid grid-cols-2 gap-4 mb-6">
       <div className="p-2 rounded-lg w-full bg-white border border-gray-400 shadow-sm">
-        <h3 className="text-sm font-bold text-yellow-600">Hearing in 6 Days !</h3>
+        <h3 className="text-sm font-bold text-yellow-600">Hearing in 6 Days</h3>
         <div className="marquee">
           <div className="marquee-content">
             <p className="text-sm font-semibold mt-2 text-yellow-600 inline-block">
